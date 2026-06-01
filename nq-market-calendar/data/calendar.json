@@ -1,0 +1,57 @@
+{
+  "periodo": "Semana de ejemplo",
+  "resumen_sesgo": "Semana cargada para el NQ. Se esperan datos de PMI y posibles movimientos del DXY. Revisa killzones de NY y mantén stops ajustados.",
+  "eventos": [
+    {
+      "dia": "Lunes",
+      "hora_et": "10:00",
+      "hora_co": "09:00 CO",
+      "nombre": "ISM Manufacturing PMI",
+      "impacto": "MEDIO",
+      "esperado": "48.5",
+      "anterior": "48.7",
+      "descripcion": "Índice de Gerentes de Compras. >50 = expansión, <50 = contracción.",
+      "escenarios": {
+        "mayor_esperado": "📈 BULLISH — expansión sectorial impulsa confianza. NQ se beneficia.",
+        "menor_esperado": "📉 BEARISH — contracción en manufactura. Cautela en Tech.",
+        "en_linea": "➡️ NEUTRO — expansión moderada."
+      },
+      "contexto_ict": "10:00 ET ISM. Si sesgo previo es bajista y PMI <50, confirma continuation. Revisar 15m FVG."
+    },
+    {
+      "dia": "Miércoles",
+      "hora_et": "08:30",
+      "hora_co": "07:30 CO",
+      "nombre": "CPI m/m",
+      "impacto": "ALTO",
+      "esperado": "0.3%",
+      "anterior": "0.2%",
+      "descripcion": "Índice de precios al consumidor. Mide inflación de bienes y servicios.",
+      "escenarios": {
+        "mayor_esperado": "📉 BEARISH — inflación alta restringe recortes de la Fed. Growth stocks sufren.",
+        "menor_esperado": "📈 BULLISH — inflación baja abre puerta a recortes. Tech y NQ se impulsan.",
+        "en_linea": "➡️ NEUTRO — dato en línea. Atención a la lectura de la Fed."
+      },
+      "contexto_ict": "Killzone NY 8:30–9:30. Revisar Order Block diario en NQ. Si previo BSL, esperar sweep + reversal."
+    }
+  ],
+  "earnings": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc",
+      "date": "2026-06-01",
+      "epsEstimate": 1.60,
+      "epsActual": null,
+      "hour": "amc"
+    },
+    {
+      "symbol": "NVDA",
+      "name": "NVIDIA Corp",
+      "date": "2026-06-02",
+      "epsEstimate": 0.84,
+      "epsActual": null,
+      "hour": "amc"
+    }
+  ],
+  "updatedAt": "12:00 UTC"
+}
