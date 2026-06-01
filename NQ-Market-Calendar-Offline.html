@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NQ Market Calendar — Offline</title>
+<style>
+:root {
+  --bg: #0b0f17; --bg-2: #111827; --bg-3: #161f2e; --bg-4: #1e293b;
+  --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.12);
+  --text: #cbd5e1; --text-2: #64748b; --text-3: #334155;
+  --head: #f1f5f9; --amber: #f59e0b; --amber-bg: rgba(245,158,11,0.10);
+  --bull: #34d399; --bull-bg: rgba(52,211,153,0.08); --bull-border: rgba(52,211,153,0.20);
+  --bear: #f87171; --bear-bg: rgba(248,113,113,0.08); --bear-border: rgba(248,113,113,0.20);
+  --neu: #fbbf24; --neu-bg: rgba(251,191,36,0.08); --neu-border: rgba(251,191,36,0.20);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+#app { max-width: 820px; margin: 0 auto; padding: 0 16px 40px; }
+.header { padding: 16px 0 12px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bull); box-shadow: 0 0 8px var(--bull); }
+.brand-title { font-size: 16px; font-weight: 700; color: var(--head); letter-spacing: -0.01em; }
+.brand-sub { font-size: 12px; color: var(--text-2); }
+.controls { display: flex; align-items: center; gap: 6px; }
+.btn-filter { padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border-2); background: transparent; color: var(--text-2); font-size: 12px; cursor: pointer; transition: all .15s; }
+.btn-filter.active { background: var(--amber-bg); border-color: rgba(245,158,11,0.45); color: var(--amber); font-weight: 600; }
+.btn-filter:hover:not(:disabled) { border-color: rgba(245,158,11,0.45); }
+.btn-filter:disabled { opacity: .4; cursor: default; }
+.btn-refresh { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-2); background: transparent; color: var(--text-2); font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: transform .2s; }
+.btn-refresh:hover:not(:disabled) { transform: rotate(90deg); }
+.btn-refresh:disabled { opacity: .4; cursor: default; }
+.header-date { font-size: 12px; color: var(--text-2); margin-top: 6px; }
+.header-updated { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.summary-card { background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.summary-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--amber); margin-bottom: 8px; }
+.summary-text { font-size: 13px; color: var(--text); line-height: 1.7; }
+.section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-2); padding: 18px 0 8px; }
+.event-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: border-color .2s, background .2s; }
+.event-card:hover { border-color: var(--border-2); background: var(--bg-3); }
+.event-card.expanded { border-color: rgba(255,255,255,0.18); }
+.card-header { display: flex; align-items: flex-start; gap: 12px; }
+.time-col { min-width: 68px; padding-top: 1px; }
+.time-et { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 700; color: var(--head); }
+.time-co { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.card-body { flex: 1; }
+.card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--head); }
+.badge { font-size: 10px; padding: 2px 10px; border-radius: 12px; font-weight: 700; }
+.badge-alto { background: rgba(248,113,113,0.12); color: var(--bear); }
+.badge-medio { background: rgba(251,191,36,0.12); color: var(--neu); }
+.card-desc { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+.card-values { display: flex; gap: 14px; margin-top: 7px; }
+.card-value { font-size: 12px; color: var(--text-2); }
+.card-value strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; }
+.exp-amber { color: var(--amber); }
+.exp-white { color: var(--text); }
+.chevron { color: var(--text-2); font-size: 12px; flex-shrink: 0; margin-top: 4px; transition: transform .2s; display: inline-block; }
+.event-card.expanded .chevron { transform: rotate(180deg); }
+.panel { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+.panel-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-2); margin-bottom: 10px; }
+.scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+@media (max-width: 640px) { .scenarios { grid-template-columns: 1fr; } }
+.scenario { border-radius: 8px; padding: 11px 12px; }
+.scenario-bull { background: var(--bull-bg); border: 1px solid var(--bull-border); }
+.scenario-bear { background: var(--bear-bg); border: 1px solid var(--bear-border); }
+.scenario-neu { background: var(--neu-bg); border: 1px solid var(--neu-border); }
+.scenario-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.sc-label-bull { color: var(--bull); }
+.sc-label-bear { color: var(--bear); }
+.sc-label-neu { color: var(--neu); }
+.scenario-text { font-size: 12px; color: var(--text); line-height: 1.55; }
+.ict-box { background: var(--amber-bg); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; padding: 11px 13px; }
+.ict-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--amber); margin-bottom: 6px; }
+.ict-text { font-size: 12px; color: var(--text); line-height: 1.65; }
+.earn-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.earn-left { display: flex; align-items: center; gap: 10px; }
+.earn-ticker { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; color: var(--head); min-width: 50px; }
+.earn-name { font-size: 13px; color: var(--text); }
+.earn-right { text-align: right; }
+.earn-eps { font-size: 12px; color: var(--text-2); }
+.earn-eps strong { color: var(--amber); }
+.earn-date { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.footer { text-align: center; padding: 24px 10px 0; font-size: 11px; color: var(--text-3); line-height: 1.6; }
+.empty { text-align: center; padding: 40px 20px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; }
+.empty-icon { font-size: 36px; margin-bottom: 12px; }
+.empty-title { font-size: 14px; color: var(--text); font-weight: 600; margin-bottom: 6px; }
+.empty-desc { font-size: 12px; color: var(--text-2); line-height: 1.6; }
+.import-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.import-row input[type="file"] { color: var(--text-2); font-size: 12px; }
+.import-row .file-name { font-size: 12px; color: var(--text-2); }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="header">
+    <div class="header-top">
+      <div class="brand">
+        <span class="brand-dot" id="status-dot"></span>
+        <span class="brand-title">NQ Market Calendar</span>
+        <span class="brand-sub">Nasdaq 100</span>
+      </div>
+      <div class="controls">
+        <button class="btn-filter active" data-scope="today">Hoy</button>
+        <button class="btn-filter" data-scope="week">Semana</button>
+        <button class="btn-refresh" id="btn-refresh" title="Actualizar">↻</button>
+      </div>
+    </div>
+    <div class="header-date" id="header-date"></div>
+    <div class="header-updated" id="header-updated"></div>
+    <div class="import-row" style="margin-top:10px;">
+      <input type="file" id="file-input" accept=".json" />
+      <span class="file-name" id="file-name">Sin archivo (usando datos de ejemplo)</span>
+    </div>
+  </header>
+
+  <main class="main" id="main">
+    <div id="content" class="content">
+      <div class="summary-card" id="summary-card">
+        <div class="summary-label">📊 Sesgo del NQ</div>
+        <div class="summary-text" id="summary-text"></div>
+      </div>
+      <div id="events-container"></div>
+      <div class="section-title">📈 Earnings Tech</div>
+      <div id="earnings-container"></div>
+    </div>
+  </main>
+
+  <footer class="footer">NQ Market Calendar — Offline Mode · Abre este archivo en tu PC</footer>
+</div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+const DAYS_ORDER = ["Lunes","Martes","Miércoles","Jueves","Viernes"];
+
+const parseDir = (text="") => {
+  if (!text) return "neutral";
+  const t = text.toUpperCase();
+  if (t.startsWith("📈") || t.includes("BULLISH")) return "bull";
+  if (t.startsWith("📉") || t.includes("BEARISH")) return "bear";
+  return "neutral";
+};
+const stripTag = (text="") => text.replace(/^(📈|📉|➡️)\s*(BULLISH|BEARISH|NEUTRO)\s*[-—]\s*/i, "").trim();
+const fmtDate = () => new Date().toLocaleDateString("es-CO", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+
+// ── DATOS DE EJEMPLO EMBEBIDOS ─────────────────────────────────────────────
+const DEFAULT_DATA = {
+  "periodo": "Semana de ejemplo",
+  "resumen_sesgo": "Semana cargada para el NQ. Se esperan datos de PMI y posibles movimientos del DXY. Revisa killzones de NY y mantén stops ajustados.",
+  "eventos": [
+    {
+      "dia": "Lunes",
+      "hora_et": "10:00",
+      "hora_co": "09:00 CO",
+      "nombre": "ISM Manufacturing PMI",
+      "impacto": "MEDIO",
+      "esperado": "48.5",
+      "anterior": "48.7",
+      "descripcion": "Índice de Gerentes de Compras. >50 = expansión, <50 = contracción.",
+      "escenarios": {
+        "mayor_esperado": "📈 BULLISH — expansión sectorial impulsa confianza. NQ se beneficia.",
+        "menor_esperado": "📉 BEARISH — contracción en manufactura. Cautela en Tech.",
+        "en_linea": "➡️ NEUTRO — expansión moderada."
+      },
+      "contexto_ict": "10:00 ET ISM. Si sesgo previo es bajista y PMI <50, confirma continuation. Revisar 15m FVG."
+    },
+    {
+      "dia": "Miércoles",
+      "hora_et": "08:30",
+      "hora_co": "07:30 CO",
+      "nombre": "CPI m/m",
+      "impacto": "ALTO",
+      "esperado": "0.3%",
+      "anterior": "0.2%",
+      "descripcion": "Índice de precios al consumidor. Mide inflación de bienes y servicios.",
+      "escenarios": {
+        "mayor_esperado": "📉 BEARISH — inflación alta restringe recortes de la Fed. Growth stocks sufren.",
+        "menor_esperado": "📈 BULLISH — inflación baja abre puerta a recortes. Tech y NQ se impulsan.",
+        "en_linea": "➡️ NEUTRO — dato en línea. Atención a la lectura de la Fed."
+      },
+      "contexto_ict": "Killzone NY 8:30–9:30. Revisar Order Block diario en NQ. Si previo BSL, esperar sweep + reversal."
+    },
+    {
+      "dia": "Viernes",
+      "hora_et": "08:30",
+      "hora_co": "07:30 CO",
+      "nombre": "Non-Farm Payrolls",
+      "impacto": "ALTO",
+      "esperado": "185K",
+      "anterior": "175K",
+      "descripcion": "Creación de empleos no agrícolas. El dato más importante del mes para la Fed.",
+      "escenarios": {
+        "mayor_esperado": "📉 BEARISH — empleo fuerte obliga a Fed 'higher for longer'. Tech sufre.",
+        "menor_esperado": "📈 BULLISH — debilidad laboral alivia presión sobre la Fed. NQ sube.",
+        "en_linea": "➡️ NEUTRO — dato en línea. Sesgo previo se mantiene."
+      },
+      "contexto_ict": "Primer viernes de mes. Alta volatilidad en apertura cash 9:30. Revisar sell-side liquidity del NQ antes del dato."
+    }
+  ],
+  "earnings": [
+    { "symbol": "AAPL", "name": "Apple Inc", "date": "2026-06-01", "epsEstimate": 1.60, "epsActual": null, "hour": "amc" },
+    { "symbol": "NVDA", "name": "NVIDIA Corp", "date": "2026-06-02", "epsEstimate": 0.84, "epsActual": null, "hour": "amc" },
+    { "symbol": "MSFT", "name": "Microsoft Corp", "date": "2026-06-03", "epsEstimate": 2.95, "epsActual": null, "hour": "amc" }
+  ],
+  "updatedAt": "OFFLINE MODE"
+};
+
+let scope = "today";
+let calendarData = DEFAULT_DATA;
+
+function render() {
+  const container = $("#events-container");
+  const earnContainer = $("#earnings-container");
+  container.innerHTML = "";
+  earnContainer.innerHTML = "";
+
+  $("#header-date").textContent = (fmtDate().charAt(0).toUpperCase() + fmtDate().slice(1));
+  if (calendarData.updatedAt) $("#header-updated").textContent = "Actualizado: " + calendarData.updatedAt;
+
+  const summaryCard = $("#summary-card");
+  if (calendarData.resumen_sesgo) { summaryCard.style.display = ""; $("#summary-text").textContent = calendarData.resumen_sesgo; }
+  else summaryCard.style.display = "none";
+
+  let events = calendarData.eventos || [];
+  if (scope === "today") {
+    const todayName = new Date().toLocaleDateString("es-CO", { weekday: "long" });
+    const cap = todayName.charAt(0).toUpperCase() + todayName.slice(1);
+    events = events.filter(e => (e.dia || "").toLowerCase() === cap.toLowerCase());
+  }
+
+  if (events.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">😴</div><div class="empty-title">Sin eventos de alto impacto</div><div class="empty-desc">Día tranquilo para el NQ. Puedes operar con más libertad sin riesgo de noticias inesperadas.</div></div>`;
+  } else {
+    const grouped = {};
+    events.forEach((ev, i) => { const d = ev.dia || "Otro"; if (!grouped[d]) grouped[d] = []; grouped[d].push({ ...ev, _i: i }); });
+    const orderedDays = scope === "today" ? Object.keys(grouped) : DAYS_ORDER.filter(d => grouped[d]);
+    orderedDays.forEach(day => {
+      if (scope === "week" || orderedDays.length > 1) {
+        const dh = document.createElement("div"); dh.className = "section-title"; dh.textContent = "— " + day; container.appendChild(dh);
+      }
+      (grouped[day] || []).forEach(ev => container.appendChild(buildEventCard(ev)));
+    });
+  }
+
+  const earnings = (calendarData.earnings || []).slice(0, 20);
+  if (earnings.length === 0) earnContainer.innerHTML = `<div class="empty"><div class="empty-desc">Sin earnings reportados para este período.</div></div>`;
+  else earnings.forEach(e => earnContainer.appendChild(buildEarningCard(e)));
+}
+
+function buildEventCard(ev) {
+  const wrap = document.createElement("div"); wrap.className = "event-card"; wrap.dataset.id = ev._i;
+  const badgeClass = (ev.impacto || "").toUpperCase() === "ALTO" ? "badge-alto" : "badge-medio";
+  const header = document.createElement("div"); header.className = "card-header";
+  header.innerHTML = `
+    <div class="time-col"><div class="time-et">${ev.hora_et || ""}</div><div class="time-co">${ev.hora_co || ""}</div></div>
+    <div class="card-body">
+      <div class="card-title-row"><span class="card-title">${ev.nombre || ""}</span><span class="badge ${badgeClass}">${ev.impacto || "MEDIO"}</span></div>
+      <div class="card-desc">${ev.descripcion || ""}</div>
+      <div class="card-values">${ev.esperado ? `<span class="card-value">Esperado: <strong class="exp-amber">${ev.esperado}</strong></span>` : ""}${ev.anterior ? `<span class="card-value">Anterior: <strong class="exp-white">${ev.anterior}</strong></span>` : ""}</div>
+    </div>
+    <span class="chevron">▾</span>`;
+  wrap.appendChild(header);
+  wrap.addEventListener("click", () => toggleCard(wrap, ev));
+  return wrap;
+}
+
+function toggleCard(wrap, ev) {
+  const isExpanded = wrap.classList.contains("expanded");
+  document.querySelectorAll(".event-card.expanded").forEach(c => { c.classList.remove("expanded"); const p = c.querySelector(".panel"); if (p) p.remove(); });
+  if (isExpanded) return;
+  wrap.classList.add("expanded");
+  const panel = document.createElement("div"); panel.className = "panel";
+  const scenarios = [
+    { key: "mayor_esperado", label: "📈 Mayor que esperado", defaultDir: "bull" },
+    { key: "menor_esperado", label: "📉 Menor que esperado", defaultDir: "bear" },
+    { key: "en_linea", label: "➡️ En línea", defaultDir: "neutral" },
+  ];
+  const scRow = document.createElement("div"); scRow.className = "scenarios";
+  scenarios.forEach(sc => {
+    const text = ev.escenarios?.[sc.key] || "";
+    const dir = parseDir(text) || sc.defaultDir;
+    const cleaned = stripTag(text) || (dir === "bull" ? "Reacción alcista probable" : dir === "bear" ? "Reacción bajista probable" : "Reacción neutral");
+    const map = { bull: ["scenario-bull","sc-label-bull"], bear: ["scenario-bear","sc-label-bear"], neutral: ["scenario-neu","sc-label-neu"] };
+    const [cls, lblCls] = map[dir];
+    const box = document.createElement("div"); box.className = "scenario " + cls;
+    box.innerHTML = `<div class="scenario-label ${lblCls}">${sc.label}</div><div class="scenario-text">${cleaned}</div>`;
+    scRow.appendChild(box);
+  });
+  panel.appendChild(document.createElement("div")).className = "panel-label";
+  panel.lastChild.textContent = "Escenarios para el NQ";
+  panel.appendChild(scRow);
+  if (ev.contexto_ict) {
+    const ict = document.createElement("div"); ict.className = "ict-box";
+    ict.innerHTML = `<div class="ict-label">📊 Contexto ICT / NQ</div><div class="ict-text">${ev.contexto_ict}</div>`;
+    panel.appendChild(ict);
+  }
+  wrap.appendChild(panel);
+}
+
+function buildEarningCard(e) {
+  const wrap = document.createElement("div"); wrap.className = "earn-card";
+  const epsE = e.epsEstimate != null ? e.epsEstimate : "—";
+  const epsA = e.epsActual != null ? e.epsActual : null;
+  const epsStr = epsA != null ? `<strong>${epsA}</strong> (est. ${epsE})` : `Est. <strong>${epsE}</strong>`;
+  const hourStr = e.hour ? (e.hour === "bmo" ? "Pre-market" : e.hour === "amc" ? "After-hours" : e.hour) : "";
+  wrap.innerHTML = `<div class="earn-left"><span class="earn-ticker">${e.symbol || ""}</span><span class="earn-name">${e.name || ""}</span></div><div class="earn-right"><div class="earn-eps">EPS: ${epsStr}</div><div class="earn-date">${e.date || ""} ${hourStr}</div></div>`;
+  return wrap;
+}
+
+// Filters
+$$(".btn-filter").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("active")) return;
+    $$(".btn-filter").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    scope = btn.dataset.scope;
+    render();
+  });
+});
+$("#btn-refresh").addEventListener("click", render);
+
+// File import
+$("#file-input").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $("#file-name").textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      calendarData = JSON.parse(ev.target.result);
+      render();
+      $("#status-dot").style.background = "var(--bull)";
+    } catch (err) {
+      alert("El archivo no es un JSON válido.");
+    }
+  };
+  reader.readAsText(file);
+});
+
+// Init
+render();
+</script>
+</body>
+</html>
